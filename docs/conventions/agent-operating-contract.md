@@ -57,7 +57,7 @@ Use these exact names and ids when discussing the architecture.
 
 | Name | Id | Type |
 |---|---|---|
-| Telemetry Generator | `telemetry-generator` | backend |
+| Analytics API | `analytics-api` | backend |
 <!-- generated:end cap:canonical-names -->
 
 <!-- generated:start cap:system-boundary -->

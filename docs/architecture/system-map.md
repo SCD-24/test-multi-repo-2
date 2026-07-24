@@ -5,10 +5,10 @@
 
 ```mermaid
 graph TD
-    telemetry-generator["Telemetry Generator <br/> <small>(BACKEND)</small>"]
+    analytics-api["Analytics API <br/> <small>(BACKEND)</small>"]
 ```
 
 ## Components
 
-- [Telemetry Generator](overview.md) (`telemetry-generator`, backend)
+- [Analytics API](overview.md) (`analytics-api`, backend)
 <!-- generated:end file:system-map -->

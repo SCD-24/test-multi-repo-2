@@ -4,18 +4,24 @@
 Projected from `schema` widgets on the architecture canvas.
 <!-- generated:end cap:data-model-intro -->
 
-<!-- generated:start comp:telemetry-generator -->
-## Telemetry Generator (`telemetry-generator`)
+<!-- generated:start comp:analytics-api -->
+## Analytics API (`analytics-api`)
 
 ### Database Table Schema
 
 | Field | Type | Flags | Notes |
 |---|---|---|---|
-| `id` | string | - | - |
-| `deviceId` | string | - | - |
-| `siteId` | string | - | - |
+| `windowStart` | number | - | - |
 | `metric` | string | - | - |
-| `value` | number | - | - |
-| `unit` | string | - | - |
-| `ts` | number | - | - |
-<!-- generated:end comp:telemetry-generator -->
+| `avg` | number | - | - |
+| `min` | number | - | - |
+| `max` | number | - | - |
+| `p95` | number | - | - |
+| `count` | number | - | - |
+| `deviceId` | string | - | - |
+| `status` | string | - | - |
+| `lastSeenTs` | number | - | - |
+| `reading` | Reading | - | - |
+| `zScore` | number | - | - |
+| `detectedTs` | number | - | - |
+<!-- generated:end comp:analytics-api -->
