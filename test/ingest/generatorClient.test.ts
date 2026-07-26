@@ -59,6 +59,20 @@ describe('GeneratorClient against a live fake generator', () => {
     expect(client.stats().framesRejected).toBe(0);
   });
 
+  it('keeps ingesting while the generator sends keepalives on its own cadence', async () => {
+    // The previous test injects keepalives by hand, between readings. This one
+    // lets them land at an arbitrary point in the byte stream — including mid
+    // reading frame — which is what actually happens against the live service.
+    await generator.close();
+    generator = await startFakeGenerator({ keepaliveMs: 5 });
+    connect();
+    await waitFor(() => client.isConnected());
+    for (let i = 0; i < 5; i += 1) generator.emit(makeReading({ id: `r-k${i}` }));
+    await waitFor(() => received.length === 5, 2_000, 'five readings through the keepalives');
+    expect(received.map((r) => r.id)).toEqual(['r-k0', 'r-k1', 'r-k2', 'r-k3', 'r-k4']);
+    expect(client.stats().framesRejected).toBe(0);
+  });
+
   it('drops malformed frames without tearing down the feed', async () => {
     connect();
     await waitFor(() => client.isConnected());

@@ -6,6 +6,7 @@ import { createHarness, type Harness } from '../helpers/harness.js';
 import { SseReader } from '../helpers/sseReader.js';
 import { METRIC_UNITS, type Metric, type Reading } from '../../src/domain/reading.js';
 import type { Snapshot } from '../../src/domain/types.js';
+import { CONFIG_DEFAULTS } from '../../src/config.js';
 
 const T0 = 1_700_000_100_000;
 
@@ -78,6 +79,15 @@ describe('GET /api/stream', () => {
     const reader = await open();
     expect(reader.header('content-type')).toContain('text/event-stream');
     expect(reader.header('cache-control')).toContain('no-cache');
+  });
+
+  it('allows the configured origin, even though it writes its own response head', async () => {
+    // subscribe() calls res.writeHead directly, so it bypasses the REST CORS
+    // middleware entirely. Without this the Dashboard's EventSource fails while
+    // every REST route it also calls keeps working — a confusing split failure.
+    const reader = await open();
+    expect(reader.header('access-control-allow-origin')).toBe(CONFIG_DEFAULTS.CORS_ORIGIN);
+    expect(reader.header('vary')).toBe('Origin');
   });
 
   it('sends a first update immediately rather than at the next tick', async () => {

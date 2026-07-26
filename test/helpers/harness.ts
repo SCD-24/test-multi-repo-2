@@ -30,6 +30,8 @@ export interface HarnessOptions {
   connected?: boolean;
   intervalMs?: number;
   minSamples?: number;
+  /** Browser origin the API should allow; omitted means the declared default. */
+  corsOrigin?: string;
 }
 
 export function createHarness(options: HarnessOptions): Harness {
@@ -51,8 +53,21 @@ export function createHarness(options: HarnessOptions): Harness {
     generatorConnected: () => connected,
     now,
   });
-  const hub = new SseHub({ snapshot, intervalMs: options.intervalMs ?? 20, keepaliveMs: 10_000 });
-  const app = createServer({ buffer, detector, generator, hub, snapshot, now });
+  const hub = new SseHub({
+    snapshot,
+    intervalMs: options.intervalMs ?? 20,
+    keepaliveMs: 10_000,
+    corsOrigin: options.corsOrigin,
+  });
+  const app = createServer({
+    buffer,
+    detector,
+    generator,
+    hub,
+    snapshot,
+    now,
+    corsOrigin: options.corsOrigin,
+  });
 
   return {
     app,

@@ -7,7 +7,7 @@
  * are injected at call sites, so the canvas `config` widget stays truthful.
  */
 
-/** The four env-backed settings declared on the canvas. */
+/** The env-backed settings declared on the canvas. */
 export interface Config {
   /** SSE endpoint of the Telemetry Generator that feeds the ring buffer. */
   generatorUrl: string;
@@ -17,6 +17,13 @@ export interface Config {
   anomalyK: number;
   /** HTTP port this service listens on. */
   port: number;
+  /**
+   * Browser origin permitted to call this API. The Dashboard runs on its own
+   * origin and talks to this service directly (there is no proxy in front), so
+   * without a matching allow-origin every REST read and the SSE stream are
+   * blocked before the request is even made.
+   */
+  corsOrigin: string;
 }
 
 /**
@@ -44,6 +51,7 @@ export const CONFIG_DEFAULTS = {
   RING_WINDOW_MS: 3_600_000,
   ANOMALY_K: 3,
   PORT: 4002,
+  CORS_ORIGIN: 'http://localhost:5173',
 } as const;
 
 /** Raised when the environment cannot produce a usable {@link Config}. */
@@ -93,6 +101,33 @@ function parsePositiveInteger(raw: string | undefined, fallback: number, key: st
   return value;
 }
 
+/**
+ * Parse an allowed browser origin: either the wildcard `*` or a single
+ * scheme://host[:port].
+ *
+ * A value carrying a path or a trailing slash is rejected rather than trimmed,
+ * because browsers compare `Access-Control-Allow-Origin` byte for byte — the
+ * misconfiguration would otherwise surface only as an unexplained CORS failure
+ * in the Dashboard, far from its cause.
+ */
+function parseOrigin(raw: string | undefined, fallback: string, key: string): string {
+  const value = raw?.trim() ? raw.trim() : fallback;
+  if (value === '*') return value;
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new ConfigError(`${key} must be "*" or an absolute origin, got "${value}"`);
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new ConfigError(`${key} must use http or https, got "${value}"`);
+  }
+  if (value !== parsed.origin) {
+    throw new ConfigError(`${key} must have no path or trailing slash, try "${parsed.origin}"`);
+  }
+  return value;
+}
+
 /** Parse a TCP port. Port 0 is rejected: this service must be addressable. */
 function parsePort(raw: string | undefined, fallback: number, key: string): number {
   const value = parsePositiveInteger(raw, fallback, key);
@@ -117,6 +152,7 @@ export function loadConfig(env: Env = process.env): Config {
     ),
     anomalyK: parsePositiveNumber(env['ANOMALY_K'], CONFIG_DEFAULTS.ANOMALY_K, 'ANOMALY_K'),
     port: parsePort(env['PORT'], CONFIG_DEFAULTS.PORT, 'PORT'),
+    corsOrigin: parseOrigin(env['CORS_ORIGIN'], CONFIG_DEFAULTS.CORS_ORIGIN, 'CORS_ORIGIN'),
   };
 }
 

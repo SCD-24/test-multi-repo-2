@@ -13,6 +13,8 @@ import type { AnomalyDetector } from '../analytics/anomalyDetector.js';
 import { bucketize } from '../analytics/buckets.js';
 import type { RingBuffer } from '../store/ringBuffer.js';
 import type { Snapshot, StaleEnvelope } from '../domain/types.js';
+import { CONFIG_DEFAULTS } from '../config.js';
+import { corsMiddleware } from './cors.js';
 import type { SseHub } from './sseHub.js';
 import {
   BadRequestError,
@@ -28,6 +30,8 @@ import {
 
 /** What the routes read from. Everything is injected, nothing is global. */
 export interface ServerDeps {
+  /** Browser origin allowed to call this API; defaults to the declared one. */
+  corsOrigin?: string;
   buffer: RingBuffer;
   detector: AnomalyDetector;
   /** The generator feed, whose connection state alone decides `stale`. */
@@ -138,6 +142,7 @@ export function createServer(deps: ServerDeps): Express {
   const now = deps.now ?? Date.now;
   const app = express();
   app.disable('x-powered-by');
+  app.use(corsMiddleware(deps.corsOrigin ?? CONFIG_DEFAULTS.CORS_ORIGIN));
   app.get('/api/kpis', kpisRoute(deps));
   app.get('/api/timeseries', timeseriesRoute(deps));
   app.get('/api/devices', devicesRoute(deps));

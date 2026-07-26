@@ -44,8 +44,12 @@ function main(): void {
     generatorConnected: () => generator.isConnected(),
   });
 
-  const hub = new SseHub({ snapshot, intervalMs: DEFAULT_TUNING.snapshotIntervalMs });
-  const app = createServer({ buffer, detector, generator, hub, snapshot });
+  const hub = new SseHub({
+    snapshot,
+    intervalMs: DEFAULT_TUNING.snapshotIntervalMs,
+    corsOrigin: config.corsOrigin,
+  });
+  const app = createServer({ buffer, detector, generator, hub, snapshot, corsOrigin: config.corsOrigin });
 
   generator.start();
   hub.start();

@@ -5,8 +5,9 @@
  * so cost is independent of how many dashboards are watching.
  */
 import type { Response } from 'express';
-import { DEFAULT_TUNING } from '../config.js';
+import { CONFIG_DEFAULTS, DEFAULT_TUNING } from '../config.js';
 import type { Snapshot } from '../domain/types.js';
+import { corsHeaders } from './cors.js';
 
 /** The event name the Dashboard listens for. */
 const UPDATE_EVENT = 'update';
@@ -18,12 +19,22 @@ export interface SseHubOptions {
   intervalMs?: number;
   /** Comment-only keepalive interval, for proxies that idle out a quiet socket. */
   keepaliveMs?: number;
+  /**
+   * Browser origin allowed to open the stream.
+   *
+   * Set here as well as in the REST middleware because {@link SseHub.subscribe}
+   * writes the response head itself: relying on the middleware's headers
+   * surviving that write would make the Dashboard's EventSource depend on a
+   * merge detail of the HTTP layer rather than on anything stated here.
+   */
+  corsOrigin?: string;
 }
 
 export class SseHub {
   private readonly snapshot: () => Snapshot;
   private readonly intervalMs: number;
   private readonly keepaliveMs: number;
+  private readonly corsOrigin: string;
   private readonly clients = new Set<Response>();
   private timer: NodeJS.Timeout | null = null;
   private keepaliveTimer: NodeJS.Timeout | null = null;
@@ -33,6 +44,7 @@ export class SseHub {
     this.snapshot = options.snapshot;
     this.intervalMs = options.intervalMs ?? DEFAULT_TUNING.snapshotIntervalMs;
     this.keepaliveMs = options.keepaliveMs ?? 15_000;
+    this.corsOrigin = options.corsOrigin ?? CONFIG_DEFAULTS.CORS_ORIGIN;
   }
 
   /**
@@ -47,6 +59,7 @@ export class SseHub {
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
+      ...corsHeaders(this.corsOrigin),
     });
     res.write(': connected\n\n');
     this.clients.add(res);

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { createHarness, type Harness } from '../helpers/harness.js';
 import { createServer } from '../../src/http/server.js';
+import { CONFIG_DEFAULTS } from '../../src/config.js';
 import { METRIC_UNITS, type Metric, type Reading } from '../../src/domain/reading.js';
 
 /** Exact 5m/1m/10s boundary, so bucket windows are unambiguous. */
@@ -245,5 +246,49 @@ describe('REST routes', () => {
     });
     const response = await request(app).get('/api/kpis').expect(500);
     expect(response.body).toEqual({ error: 'internal error' });
+  });
+});
+
+describe('CORS', () => {
+  /**
+   * The Dashboard is a browser app on its own origin calling this API directly.
+   * Without these headers every route below is unreachable from it, so they are
+   * asserted per route rather than once: a middleware registered after a route
+   * would still pass a single spot-check.
+   */
+  const READ_ROUTES = ['/api/kpis', '/api/timeseries', '/api/devices', '/api/anomalies', '/healthz'];
+
+  it.each(READ_ROUTES)('allows the configured origin on %s', async (route) => {
+    const harness = createHarness({ startAt: T0, corsOrigin: 'http://localhost:5173' });
+    // Status is deliberately not asserted: the header must be present whatever
+    // the outcome, or the browser cannot even read a 4xx/5xx body.
+    const response = await request(harness.app).get(route);
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+    expect(response.headers['vary']).toBe('Origin');
+  });
+
+  it('sends the header on an error response too', async () => {
+    const harness = createHarness({ startAt: T0, corsOrigin: 'http://localhost:5173' });
+    const response = await request(harness.app).get('/api/nope').expect(404);
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+  });
+
+  it('answers a preflight with 204 instead of falling through to the 404 handler', async () => {
+    const harness = createHarness({ startAt: T0, corsOrigin: 'http://localhost:5173' });
+    const response = await request(harness.app).options('/api/kpis').expect(204);
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+    expect(response.headers['access-control-allow-methods']).toBe('GET, OPTIONS');
+  });
+
+  it('honours a non-default origin', async () => {
+    const harness = createHarness({ startAt: T0, corsOrigin: 'https://ops.example.com' });
+    const response = await request(harness.app).get('/api/kpis').expect(200);
+    expect(response.headers['access-control-allow-origin']).toBe('https://ops.example.com');
+  });
+
+  it('falls back to the declared default origin when none is injected', async () => {
+    const harness = createHarness({ startAt: T0 });
+    const response = await request(harness.app).get('/api/kpis').expect(200);
+    expect(response.headers['access-control-allow-origin']).toBe(CONFIG_DEFAULTS.CORS_ORIGIN);
   });
 });

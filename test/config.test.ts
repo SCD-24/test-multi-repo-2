@@ -14,7 +14,12 @@ describe('loadConfig', () => {
       ringWindowMs: 3_600_000,
       anomalyK: 3,
       port: 4002,
+      corsOrigin: CONFIG_DEFAULTS.CORS_ORIGIN,
     });
+  });
+
+  it('defaults the allowed origin to the Dashboard dev server', () => {
+    expect(loadConfig({}).corsOrigin).toBe('http://localhost:5173');
   });
 
   it('treats blank values as absent', () => {
@@ -30,13 +35,26 @@ describe('loadConfig', () => {
       RING_WINDOW_MS: '60000',
       ANOMALY_K: '2.5',
       PORT: '8080',
+      CORS_ORIGIN: 'https://ops.example.com',
     });
     expect(config).toEqual({
       generatorUrl: 'https://generator.internal:9000/stream',
       ringWindowMs: 60_000,
       anomalyK: 2.5,
       port: 8080,
+      corsOrigin: 'https://ops.example.com',
     });
+  });
+
+  it('accepts the wildcard origin', () => {
+    expect(loadConfig({ CORS_ORIGIN: '*' }).corsOrigin).toBe('*');
+  });
+
+  it('rejects an origin with a path or trailing slash, naming the fix', () => {
+    // Browsers compare the header byte for byte, so "http://x/" never matches.
+    expect(() => loadConfig({ CORS_ORIGIN: 'http://localhost:5173/' })).toThrow(
+      /no path or trailing slash.*http:\/\/localhost:5173/,
+    );
   });
 
   it.each([
@@ -52,6 +70,9 @@ describe('loadConfig', () => {
     ['PORT', '0'],
     ['PORT', '70000'],
     ['PORT', 'http'],
+    ['CORS_ORIGIN', 'localhost:5173'],
+    ['CORS_ORIGIN', 'ftp://localhost:5173'],
+    ['CORS_ORIGIN', 'http://localhost:5173/api'],
   ])('rejects %s=%s', (key, value) => {
     expect(() => loadConfig({ [key]: value })).toThrow(ConfigError);
   });

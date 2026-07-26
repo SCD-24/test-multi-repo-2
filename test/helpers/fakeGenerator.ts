@@ -1,10 +1,16 @@
 /**
- * A stand-in for the Telemetry Generator (new-test1), which has no source yet.
+ * A stand-in for the Telemetry Generator (new-test1).
  *
- * It speaks the contract declared on the canvas — GET /stream, SSE frames named
- * `reading` carrying a JSON Reading — so the Analytics API can be built and
- * tested end to end today, and pointed at the real generator later with no code
- * change. Tests drive it explicitly: nothing is emitted unless asked.
+ * The real generator now exists, so this fake is no longer speaking to a
+ * hypothetical: its frames are byte-for-byte what `GET /stream` actually emits,
+ * as pinned by that repo's `test/http/streamContract.test.ts` — an opening
+ * `: connected` comment, named `reading` events with a single data line, bare
+ * `: keepalive` comments, and no `id:` or `retry:` directives. Keeping the two
+ * aligned is the point: if the generator's framing changes, its contract test
+ * fails there and this fake must be updated here, rather than the ingest tests
+ * quietly passing against a format nothing produces.
+ *
+ * Tests drive it explicitly: nothing is emitted unless asked.
  */
 import express from 'express';
 import type { Server } from 'node:http';
@@ -47,8 +53,19 @@ export interface FakeGenerator {
   close(): Promise<void>;
 }
 
+export interface FakeGeneratorOptions {
+  /**
+   * Cadence of bare `: keepalive` comment frames, mirroring the real hub (15s
+   * there). Off by default so most tests stay fully deterministic; set it when
+   * the point of the test is that keepalives do not disturb the parser.
+   */
+  keepaliveMs?: number;
+}
+
 /** Start the fake on an ephemeral port. */
-export async function startFakeGenerator(): Promise<FakeGenerator> {
+export async function startFakeGenerator(
+  options: FakeGeneratorOptions = {},
+): Promise<FakeGenerator> {
   const clients = new Set<Response>();
   let failStatus = 0;
   let requests = 0;
@@ -60,10 +77,13 @@ export async function startFakeGenerator(): Promise<FakeGenerator> {
       res.status(failStatus).json({ error: 'generator unavailable' });
       return;
     }
+    // Same head the real generator writes, down to the no-transform and the
+    // proxy-buffering opt-out.
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
     });
     res.write(': connected\n\n');
     clients.add(res);
@@ -86,6 +106,11 @@ export async function startFakeGenerator(): Promise<FakeGenerator> {
     for (const client of clients) client.write(text);
   };
 
+  const keepalive = options.keepaliveMs
+    ? setInterval(() => write(': keepalive\n\n'), options.keepaliveMs)
+    : null;
+  keepalive?.unref?.();
+
   return {
     url: `http://127.0.0.1:${port}/stream`,
     emit: (reading) => write(`event: reading\ndata: ${JSON.stringify(reading)}\n\n`),
@@ -100,6 +125,7 @@ export async function startFakeGenerator(): Promise<FakeGenerator> {
     connectionCount: () => clients.size,
     requestCount: () => requests,
     close: async () => {
+      if (keepalive) clearInterval(keepalive);
       for (const client of clients) client.end();
       clients.clear();
       for (const socket of sockets) socket.destroy();

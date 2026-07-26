@@ -10,3 +10,10 @@ Generated thin adapter. Canonical documentation lives in `docs/` — follow the 
 - Architecture overview: [docs/architecture/overview.md](docs/architecture/overview.md)
 - Maturity & capabilities: [docs/system-level.yml](docs/system-level.yml)
 <!-- generated:end file:adapter:claude -->
+
+## Running this service
+
+Not generated, so it survives regeneration of the block above. See
+[README.md](README.md#running-the-full-pipeline) for local commands, the pipeline start order
+(generator `:4001` → analytics API `:4002` → dashboard `:5173`), the cross-origin requirement,
+and per-hop verification; see [.env.example](.env.example) for configuration.
