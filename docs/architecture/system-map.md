@@ -6,9 +6,11 @@
 ```mermaid
 graph TD
     analytics-api["Analytics API <br/> <small>(BACKEND)</small>"]
+    test-object["Test Object <br/> <small>(BACKEND)</small>"]
 ```
 
 ## Components
 
 - [Analytics API](overview.md) (`analytics-api`, backend)
+- [Test Object](overview.md) (`test-object`, backend)
 <!-- generated:end file:system-map -->

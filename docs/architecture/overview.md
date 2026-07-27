@@ -3,7 +3,7 @@
 
 # Architecture Overview
 
-1 component(s) declared on the architecture canvas. Topology: [system-map.md](system-map.md).
+2 component(s) declared on the architecture canvas. Topology: [system-map.md](system-map.md).
 <!-- generated:end cap:overview-intro -->
 
 <!-- generated:start comp:analytics-api -->
@@ -14,3 +14,8 @@ Ingests Readings from the Telemetry Generator into an in-memory Ring Buffer hold
 
 **Tech:** ["Node.js", "TypeScript", "Express (REST + SSE)", "Vitest"]
 <!-- generated:end comp:analytics-api -->
+
+<!-- generated:start comp:test-object -->
+> **Not verified at the current commit** — source has changed since the last full sweep, or none has run. Treat this section as a snapshot and verify against source before relying on it.
+## Test Object (`test-object`, BACKEND)
+<!-- generated:end comp:test-object -->
