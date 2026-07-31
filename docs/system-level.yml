@@ -1,5 +1,5 @@
 # Generated — do not edit by hand.
-core_level: 2
+core_level: 1
 capabilities:
   architecture/groups: false
   architecture/interactions: false
@@ -7,6 +7,6 @@ capabilities:
   architecture/system-map: true
   conventions/agent-operating-contract: true
   domain/glossary: true
-  reference/api: true
+  reference/api: false
   reference/config: false
-  reference/data-model: true
+  reference/data-model: false

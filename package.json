@@ -1,31 +1,13 @@
 {
-  "name": "analytics-api",
+  "name": "new-test2",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Ingests Readings from the Telemetry Generator into an in-memory Ring Buffer and serves live analytics to the Dashboard.",
+  "description": "Formerly the Analytics API service; that code now lives in the new-test3 repo under server/. This repo currently holds no source.",
   "engines": {
     "node": ">=20"
   },
-  "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "express": "^4.21.2"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^22.10.2",
-    "@types/supertest": "^6.0.2",
-    "@vitest/coverage-v8": "^3.0.0",
-    "supertest": "^7.0.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
-    "vitest": "^3.0.0"
-  }
+  "scripts": {},
+  "dependencies": {},
+  "devDependencies": {}
 }
